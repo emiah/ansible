@@ -1,0 +1,46 @@
+#!/bin/bash
+CHATID="{{CHATID}}"
+token="{{token}}"
+
+function do_notify_on_error() {
+    service=$1
+    ip=$2
+    res=$3
+    if [[ $res -eq 200 ]]; then
+        curl --connect-timeout 10 "https://api.telegram.org/bot$token/sendMessage?chat_id=$CHATID&text=OK     {{name_cum}} ip=$ip $service"
+    else
+        curl --connect-timeout 10 "https://api.telegram.org/bot$token/sendMessage?chat_id=$CHATID&text=Error    {{name_cum}} ip=$ip $service"
+    fi
+
+}
+
+function check_db_node (){
+  service=$1
+  ip=$2
+  port=$3
+  res=`curl -Is -m3 $ip:$port |awk '{print $2}'`
+    if [[ ! -e /usr/local/bin/$service ]]
+      echo 200 > /usr/local/bin/$service
+    fi
+  check=`cat /usr/local/bin/$service`
+    if [ "$res" -ne "$check" ] && [ $res -eq 200 ]; then
+       echo $res > /usr/local/bin/$service
+       do_notify_on_error  $service $ip $res
+       echo $date $service $res >> /var/log/check_db.log
+    fi
+
+    if [ "$res" -ne "$check" ] && [ $res -eq 503 ]; then
+       echo $res > /usr/local/bin/$service
+       do_notify_on_error  $service $ip $res
+       echo $date $service $res >> /var/log/check_db.log
+    fi
+
+}
+
+(
+# Wait for lock on /var/lock/.myscript.lock (fd 200) for 10 seconds
+flock -x -w 30 200 || exit 1
+{% for item in services %}
+   check_db_node {{item.name}} {{item.ip}} {{port_check}}
+{% endfor %}
+) 200>/var/lock/.check_db.lock

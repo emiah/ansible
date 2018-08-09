@@ -1,0 +1,18 @@
+---
+- name: Add Repo
+  file:
+    src: MariaDB.repo
+    dest: /etc/yum.repos.d/
+
+- name: install mysql
+  yum:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - MariaDB-server
+    - MariaDB-client
+
+- name: stop firewalld
+  service:
+    name: firewalld
+    state: stopped

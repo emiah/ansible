@@ -1,0 +1,19 @@
+---
+- name: Tunning sysctl
+  sysctl:
+    name: '{{ item.name }}'
+    value: '{{ item.value }}'
+    sysctl_set: yes
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.conf
+  with_items:
+    - { name: 'vm.overcommit_memory', value: '1'}
+    - { name: 'net.core.somaxconn', value: '65535' }
+- name: Disable THP
+  shell: "echo never > /sys/kernel/mm/transparent_hugepage/enabled"
+    
+- name: Edit /etc/rc.local Disable THP
+  lineinfile:
+    dest: '/etc/rc.local'
+    line: 'echo never > /sys/kernel/mm/transparent_hugepage/enabled'

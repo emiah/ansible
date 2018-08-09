@@ -1,0 +1,15 @@
+---
+- name: Install Repo
+  yum:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    state: present
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+- name: Copy install_ruby.sh
+  copy:
+    src: install_ruby.sh
+    dest: /usr/local/bin/
+    mode: 0755
+
+- name: install ruby
+  command: /usr/local/bin/install_ruby.sh

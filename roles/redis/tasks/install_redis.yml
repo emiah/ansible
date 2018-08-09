@@ -1,0 +1,92 @@
+---
+- name: Install python-pip
+  yum: name={{ item }} state=present
+  with_items:
+    - libsemanage-python
+    - epel-release
+    - python-pip
+
+- name: Install pexpect
+  pip:
+    name: pexpect
+
+- name: Copy source redis4.0.10
+  unarchive:
+    src: redis-4.0.10.tar.gz
+    dest: /usr/local/src/
+
+- name: Build redis-4
+  make:
+    chdir: /usr/local/src/redis-4.0.10
+    target: install
+
+- name: Create folder
+  file:
+    path: '{{ item }}'
+    state: directory
+  with_items:
+    - '{{ dir_data }}/{{ port_slave }}'
+    - '{{ dir_data }}/{{ port_master }}'
+    - '{{ dir_log }}/{{ port_slave }}'
+    - '{{ dir_log }}/{{ port_master }}'
+    - '{{ dir_conf }}'
+    - /etc/systemd/system/redis_{{ port_slave }}.service.d
+    - /etc/systemd/system/redis_{{ port_master }}.service.d
+
+- name: Copy redis-trib.rb
+  copy:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { src: 'redis-trib.rb', dest: '/usr/local/bin/', mode: '0755' }
+    - { src: 'limit.conf', dest: '/etc/systemd/system/redis_{{ port_master }}.service.d/', mode: '0644' }
+    - { src: 'limit.conf', dest: '/etc/systemd/system/redis_{{ port_slave }}.service.d/', mode: '0644' }
+
+- name: Stop firewalld
+  service:
+    name: firewalld
+    state: stopped
+
+- name: Create systemd
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { src: 'redis_master.service.j2', dest: '/usr/lib/systemd/system/redis_{{ port_master }}.service', mode: '0644' }
+    - { src: 'redis_slave.service.j2', dest: '/usr/lib/systemd/system/redis_{{ port_slave }}.service', mode: '0644' }
+
+- name: reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: Edit config redis
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+  with_items:
+    - { src: 'config_master.conf.j2', dest: '{{ dir_conf }}/{{ port_master }}.conf'}
+    - { src: 'config_slave.conf.j2', dest: '{{ dir_conf }}/{{ port_slave }}.conf'}
+  notify: restart redis
+
+- name: force all notified handlers to run at this point, not waiting for normal sync points
+  meta: flush_handlers
+
+- name: check cluster
+  shell: "redis-cli -p {{ port_master }} cluster nodes |wc -l"
+  when: inventory_hostname == "{{ ansible_play_hosts[0] }}"
+  register: check_cluster
+
+- name: Cluster nodes
+  shell: "redis-cli -p {{ port_master }} cluster nodes"
+  register: cluster_nodes
+  when:
+    - inventory_hostname == "{{ ansible_play_hosts[0] }}"
+    - "{{ check_cluster.stdout }} != 1"
+
+- name: Cluster nodes info
+  debug:
+    var: cluster_nodes.stdout_lines
+  when:
+    - inventory_hostname == "{{ ansible_play_hosts[0] }}"
+    - "{{ check_cluster.stdout }} != 1"

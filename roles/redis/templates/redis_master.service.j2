@@ -1,0 +1,13 @@
+[Unit]
+Description=Redis Server
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/redis_{{ port_master }}.pid
+ExecStart=/usr/local/bin/redis-server {{ dir_conf }}/{{ port_master }}.conf
+ExecStop=/bin/kill -15 $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

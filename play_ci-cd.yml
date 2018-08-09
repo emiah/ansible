@@ -1,0 +1,4 @@
+---
+- hosts: all
+  roles:
+    - { role: ci-cd, become_user: yes }

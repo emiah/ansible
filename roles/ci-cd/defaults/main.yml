@@ -1,0 +1,25 @@
+---
+#------nginx
+game:  myagame
+domain: mydomain
+#domain_vn: tlk.gamota.vn
+
+#-----setup_register
+url: https://mygit/
+registration_token: mytoken
+executor: docker
+description: "{{game}}"
+tag_list: docker, production, "{{game}}"
+docker_image: docker:latest
+docker_volumes: /data/production/blogsg/{{game}}:/root/.ssh:ro
+
+#------ssh_web
+runner_user_home: /data/production/blogsg/{{game}}
+
+#------ssh_runner
+user_deploy: "deploy"
+ip_runner: "myiprunner"
+deploy_home: "/home/deploy"
+
+#-----haproxy
+use_backend: use_backend backend_game_pages if { ssl_fc_sni {{domain}} }

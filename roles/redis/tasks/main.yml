@@ -1,0 +1,25 @@
+---
+- name: Tunning redis
+  include: tunning.yml
+  tags:
+    - setup_cluster
+    - install_redis
+- name: Install ruby
+  include: install_ruby.yml
+  tags:
+    - setup_cluster
+    - install_redis
+
+- name: Install Redis
+  include: install_redis.yml
+  tags:
+    - setup_cluster
+    - install_redis
+
+- name: Setup cluster
+  include: setup_cluster.yml
+  when:
+    - inventory_hostname == "{{ ansible_play_hosts[0] }}"
+    - check_cluster.stdout == "1"
+  tags:
+    - setup_cluster

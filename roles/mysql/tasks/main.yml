@@ -1,0 +1,11 @@
+---
+- name: Install mysql
+  include: install_mysql.yml
+  tags: install_mysql
+
+- name: test
+  file:
+    src: MariaDB.repo
+    dest: /root/
+  when: master
+  tags: test

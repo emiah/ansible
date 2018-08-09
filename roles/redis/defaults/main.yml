@@ -1,0 +1,5 @@
+port_master: 6000
+port_slave: 6001
+dir_conf: /etc/redis
+dir_log: /var/log/redis
+dir_data: /var/lib/redis

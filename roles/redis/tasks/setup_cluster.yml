@@ -1,0 +1,25 @@
+---
+- name: create cluster 3 master
+  expect:
+    command: "redis-trib.rb create {{ ansible_play_hosts[0] }}:{{ port_master }} {{ ansible_play_hosts[1] }}:{{ port_master }} {{ ansible_play_hosts[2] }}:{{ port_master }}"
+    responses:
+      (?i)configuration: "yes"
+
+- name: get masterid {{ ansible_play_hosts[0] }}
+  shell: "redis-cli -p {{ port_master }} cluster nodes |grep {{ ansible_play_hosts[0] }} |grep master | awk '{print $1}'"
+  register: masterid_node1
+
+- name: find masterid {{ ansible_play_hosts[1] }}
+  shell: "redis-cli -p {{ port_master }} cluster nodes |grep {{ ansible_play_hosts[1] }} |grep master | awk '{print $1}'"
+  register: masterid_node2
+
+- name: find masterid {{ ansible_play_hosts[2] }}
+  shell: "redis-cli -p {{ port_master }} cluster nodes |grep {{ ansible_play_hosts[2] }} |grep master | awk '{print $1}'"
+  register: masterid_node3
+
+- name: Add Slave
+  shell: "redis-trib.rb add-node --slave --master-id {{ item.master_id }} {{ item.slave }}:{{ port_slave }} {{ item.master }}:{{ port_master }}"
+  with_items:
+    - { master_id: '{{ masterid_node1.stdout }}', slave: '{{ ansible_play_hosts[1] }}', master: '{{ ansible_play_hosts[0] }}'}
+    - { master_id: '{{ masterid_node2.stdout }}', slave: '{{ ansible_play_hosts[2] }}', master: '{{ ansible_play_hosts[1] }}'}
+    - { master_id: '{{ masterid_node3.stdout }}', slave: '{{ ansible_play_hosts[0] }}', master: '{{ ansible_play_hosts[2] }}'}

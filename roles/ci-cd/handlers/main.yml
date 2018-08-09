@@ -1,0 +1,8 @@
+- name: Reload nginx                 | Nginx
+  service:
+    name: nginx
+    state: reloaded
+- name: Reload haproxy                         | haproxy
+  service:
+    name: haproxy
+    state: reloaded

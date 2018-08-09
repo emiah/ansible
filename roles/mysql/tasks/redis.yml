@@ -1,0 +1,7 @@
+---
+- name: Copy file
+  template:
+    src: userparameter_redis.conf.j2
+    dest: /etc/zabbix/zabbix_agentd.d/userparameter_redis.conf
+    mode: 0644
+  notify: restart zabbix-agent

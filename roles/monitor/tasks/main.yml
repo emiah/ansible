@@ -1,0 +1,9 @@
+---
+- name: Monitor mysql
+  include: mysql.yml
+  tags: mysql
+
+- name: Monitor redis
+  include: redis.yml
+  tags: redis
+  

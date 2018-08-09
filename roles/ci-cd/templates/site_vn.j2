@@ -1,0 +1,5 @@
+server {
+    listen 80;
+    server_name {{domian_vn}};
+    rewrite ^(.*) http://{{domain}}$1 permanent;
+}

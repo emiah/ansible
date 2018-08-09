@@ -1,0 +1,77 @@
+---
+- name: check port {{port_check}}
+  shell: grep {{port_check}} /etc/services |wc -l
+  register: check_port
+
+
+- name: Debug
+  shell: grep {{port_check}} /etc/services
+  register: log
+  when:  check_port.stdout != "0"
+
+- name: add port {{port_check}} service
+  shell: echo "mysqlchk {{port_check}}/tcp" >> /etc/services
+  when:
+    - inventory_hostname in groups['db']
+    - check_port.stdout == "0"
+
+- name: install xinetd
+  yum:
+    name: xinetd
+    state: latest
+  when: inventory_hostname in groups['db']
+
+- name: add script check agent master | Replication mysql
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: 'mysqlchk_master_mysql.j2', dest: '/etc/xinetd.d/mysqlchk', mode: '0744'}
+    - {src: 'check_master.j2', dest: '/usr/local/bin/check_master', mode: '0755'}
+  notify:
+  - start xinetd
+  when: inventory_hostname in groups['master']
+
+- name: add script check agent slave | Replication mysql
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: 'mysqlchk_slave_mysql.j2', dest: '/etc/xinetd.d/mysqlchk', mode: '0744'}
+    - {src: 'replicationcheck.j2', dest: '/usr/local/bin/replicationcheck', mode: '0755'}
+  notify:
+  - start xinetd
+  when: inventory_hostname in groups['slave']
+
+- name: add script check agent | Galera
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: 'mysqlchk_galera.j2', dest: '/etc/xinetd.d/mysqlchk', mode: '0744'}
+    - {src: 'galera_check.j2', dest: '/usr/local/bin/galera_check', mode: '0755'}
+  notify:
+  - start xinetd
+  when: inventory_hostname in groups['galera']
+
+- name: add script alter
+  template:
+    src: check_db.j2
+    dest: /usr/local/bin/check_db
+    mode: 755
+  when: inventory_hostname in groups['lb']
+
+- name: add crontab script alter
+  cron:
+    name: alter databases
+    job: /usr/local/bin/check_db
+    minute: '*/2'
+  when: inventory_hostname in groups['lb']
+
+- name: Log
+  debug:
+    var: log.stdout_lines
+  when:  check_port.stdout != "0"

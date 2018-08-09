@@ -1,0 +1,6 @@
+---
+- name: restart redis
+  command: systemctl restart {{ item }}
+  with_items:
+    - "redis_{{ port_master }}"
+    - "redis_{{ port_slave }}"
