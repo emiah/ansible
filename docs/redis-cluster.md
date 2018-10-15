@@ -33,6 +33,6 @@ Khi master trong cặp master slave bị die, slave sẽ được đẩy lên l�
 
 ![bb](../image/node_die.png)
 
-Cần tái lập lại hệ thống ban đầu bằng cách restart redis sau khi node die hoạt động trở lại. testaa
+Cần tái lập lại hệ thống ban đầu bằng cách restart redis sau khi node die hoạt động trở lại.
 
-test2
+test1
